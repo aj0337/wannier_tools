@@ -54,9 +54,13 @@ subroutine readinput
    lattice_constant_c= 3.36d0
    twisted_angle_array_input = 0
    stacking_sequences_input = 'A'
+   onsite = 0.0d0
+   first_neighbor_hopping = 0.0d0
+   second_neighbor_hopping = 0.0d0
+   third_neighbor_hopping = 0.0d0
 
    read(1001, PARAMETERS, iostat=stat)
-   
+
    if (stat/=0) then
       backspace(1001)
       read(1001,fmt='(A)') inline
@@ -74,8 +78,8 @@ subroutine readinput
 
    write(stdout, '(a, i5)')">> twisted_index_m= ", twisted_index_m
    twisted_angle_degree= acos((3d0*twisted_index_m*twisted_index_m + 3d0*twisted_index_m +&
-   0.5d0)/(3d0*twisted_index_m*twisted_index_m + 3d0*twisted_index_m + 1d0))*180/pi
-   
+      0.5d0)/(3d0*twisted_index_m*twisted_index_m + 3d0*twisted_index_m + 1d0))*180/pi
+
    write(stdout, '(a, f12.6, a)')">> twisted_angle_degree= ", twisted_angle_degree, ' degree'
 
    !> twisted angle array
@@ -90,7 +94,7 @@ subroutine readinput
       write(stdout, *)">> We will generate POSCAR"
    endif
 
-   !> 
+   !>
    write(stdout, '(a, f12.6, a)')">> hr_cutoff= ", hr_cutoff, ' eV'
    write(stdout, '(a, f12.6, a)')">> vpppi= ", vpppi, ' eV'
    write(stdout, '(a, i6)')">> iR_cut= ", iR_cut
@@ -139,7 +143,7 @@ subroutine readinput
    write(1002, '(a, L3)')'hr_generate = ', hr_generate
    write(1002, '(a)')' '
    write(1002, '(a)')'! gen_sparse_hr = F, hr.dat is in wannier90 format,  hr_generate = T, hr.dat is in sparse format'
-   write(1002, '(a, L3)')'gen_sparse_hr = ', gen_sparse_hr 
+   write(1002, '(a, L3)')'gen_sparse_hr = ', gen_sparse_hr
    write(1002, '(a)')' '
    write(1002, '(a)')'! hr_cutoff (eV) HmnR is set to zero if HmnR< hr_cutoff'
    write(1002, '(a, f12.6)')'hr_cutoff = ', hr_cutoff
@@ -153,5 +157,3 @@ subroutine readinput
    outfileindex= 32432
    return
 end subroutine readinput
-
-
