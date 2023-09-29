@@ -107,15 +107,18 @@ subroutine generate_hr
 
    if (gen_sparse_hr) then
       open(unit=1012, file='TG_hr.dat')
+      open(unit=1013, file='TG_hr_with_atom_coord.dat')
       write(1012, '(a,f10.4)')'! Tight binding model for twisted graphene system, theta=', twisted_angle_degree
       write(1012, '(i20, a)') nnz  , '  ! Number of non-zeros lines of HmnR'
       write(1012, '(i20, a)') num_atoms  , '  ! Number of Wannier functions'
       write(1012, '(i20, a)') nrpts, '  ! Number of R points'
       write(1012, '(15I5)') (1, i=1, nrpts)
       do i=1, nnz
-         write(1012, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), pos_at1(i,:),pos_at2(i,:),H_acoo(i)
+         write(1012, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), H_acoo(i)
+         write(1013, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), pos_at1(i,:),pos_at2(i,:),H_acoo(i)
       enddo
       close(1012)
+      close(1013)
 
    else
       open (unit=1012, file='TG_hr.dat')
