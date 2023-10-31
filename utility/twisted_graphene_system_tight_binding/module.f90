@@ -74,6 +74,7 @@ module para
    real(dp) :: lattice_constant_c
 
    real(dp) :: onsite, first_neighbor_hopping, second_neighbor_hopping, third_neighbor_hopping
+   real(dp) :: potential_height_U0, lattice_period_L
 
 
    !>  iR_cut
@@ -82,7 +83,7 @@ module para
    namelist / PARAMETERS / number_layers, twisted_index_m, &
       twisted_angle_array_input, stacking_sequences_input , &
       use_poscar, hr_generate, gen_sparse_hr, hr_cutoff, vpppi, &
-      iR_cut, lattice_constant_a, lattice_constant_c, onsite, first_neighbor_hopping, second_neighbor_hopping, third_neighbor_hopping
+      iR_cut, lattice_constant_a, lattice_constant_c, onsite, first_neighbor_hopping, second_neighbor_hopping, third_neighbor_hopping, potential_height_U0, lattice_period_L
 
 end module para
 

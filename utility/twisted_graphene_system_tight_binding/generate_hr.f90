@@ -1,3 +1,18 @@
+subroutine kronig_penney_potential(b, U0, x1, V)
+   use para
+   implicit none
+   real(dp), intent(in) :: b, U0, x1
+   real(dp), intent(out) :: V
+
+   ! Calculate potential at x1
+   V = -U0/2.0
+   if (0 <= x1 .and. x1 < b) then
+      V = U0/2.0
+   end if
+
+end subroutine kronig_penney_potential
+
+
 subroutine generate_hr
    !> generate sparse tight-binding hamiltonian used in WannierTools
    !> Assuming the z direction is the stacking direction
@@ -19,8 +34,8 @@ subroutine generate_hr
    integer, allocatable :: irvec(:, :)
    integer, allocatable :: H_icoo(:), H_jcoo(:), H_ir(:)
 
-   real(dp) :: pos1(3), pos2(3), pos_cart(3), pos_direct(3), R(3), delta_pos(3), dis
-   real(dp), allocatable :: pos_at1(:,:), pos_at2(:,:)
+   real(dp) :: pos1(3), pos1_direct(3), pos2(3), pos_cart(3), pos_direct(3), R(3), delta_pos(3), dis
+   real(dp), allocatable :: pos_at1(:,:), pos_direct_at1(:,:), pos_at2(:,:)
    complex(dp) :: tij, h_value
    complex(dp), allocatable :: H_acoo(:)
 
@@ -62,6 +77,7 @@ subroutine generate_hr
    allocate(H_jcoo(nnzmax))
    allocate(H_ir  (nnzmax))
    allocate(pos_at1(nnzmax,3))
+   allocate(pos_direct_at1(nnzmax,3))
    allocate(pos_at2(nnzmax,3))
    H_icoo= 0
    H_jcoo= 0
@@ -77,13 +93,14 @@ subroutine generate_hr
       print *, '>> we are calculating HmnR at ir=', ir
       do ia=1, num_atoms
          pos_direct= atom_positions_direct(:, ia)
+         pos1_direct(:)= pos_direct(:)
          call direct_cart_real(lattice(:, 1), lattice(:, 2), lattice(:, 3), pos_direct, pos_cart)
          pos1= pos_cart
          do ja=1, num_atoms
             pos_direct= atom_positions_direct(:, ja)
             call direct_cart_real(lattice(:, 1), lattice(:, 2), lattice(:, 3), pos_direct, pos_cart)
             pos2= pos_cart+ R
-            call get_hopping(pos1, pos2, tij)
+            call get_hopping(pos1, pos1_direct, pos2, tij)
             !> when tij less than hr_cutoff, we don't keep it.
             if (abs(tij)<hr_cutoff) cycle
             iter= iter+ 1
@@ -92,6 +109,7 @@ subroutine generate_hr
             H_ir  (iter)= ir
             H_acoo(iter)= tij
             pos_at1(iter,:)= pos1(:)
+            pos_direct_at1(iter,:)= pos1_direct(:)
             pos_at2(iter,:)= pos2(:)
          enddo ! ja
       enddo ! ia
@@ -115,7 +133,7 @@ subroutine generate_hr
       write(1012, '(15I5)') (1, i=1, nrpts)
       do i=1, nnz
          write(1012, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), H_acoo(i)
-         write(1013, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), pos_at1(i,:),pos_at2(i,:),H_acoo(i)
+         write(1013, '(3i5, 2i8, 11f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), pos_at1(i,:),pos_at2(i,:),pos_direct_at1(i,:),H_acoo(i)
       enddo
       close(1012)
       close(1013)
@@ -166,7 +184,7 @@ subroutine isclose(number1,number2,result)
    return
 end subroutine
 
-subroutine get_hopping(pos1, pos2, tij)
+subroutine get_hopping(pos1, pos1_direct, pos2, tij)
    !> this subroutine will generate the hopping between two carbon atoms with given their positions.
    !> here we asuume z direction is the stacking direction
    !> parameters are adopted from  Nano Lett. 2020, 20, 2410−2415
@@ -175,7 +193,7 @@ subroutine get_hopping(pos1, pos2, tij)
    use para
    implicit none
 
-   real(dp), intent(in) :: pos1(3)
+   real(dp), intent(in) :: pos1(3), pos1_direct(3)
    real(dp), intent(in) :: pos2(3)
    complex(dp), intent(out) :: tij
 
@@ -183,7 +201,7 @@ subroutine get_hopping(pos1, pos2, tij)
    real(dp) :: o, t1, t2, t3
    real(dp) :: first_neighbor_dis, second_neighbor_dis, third_neighbor_dis,c_c_dis
    logical :: result1, result2, result3
-
+   real(dp) :: b, U0, V, epsL, meV2eV
 
 
    c_c_dis = 1.42d0 ! in Angstroms. remove hardcoding
@@ -193,27 +211,24 @@ subroutine get_hopping(pos1, pos2, tij)
    second_neighbor_dis = dsqrt(3.0d0) * c_c_dis
    third_neighbor_dis = 2 * c_c_dis
    tij= 0d0
-
-   ! onsite=-0.00d0
-   ! first_neighbor_hopping = -2.7d0
-   ! ! second_neighbor_hopping = 0.073d0
-   ! second_neighbor_hopping = 0.00d0
-   ! ! third_neighbor_hopping = 0.1d0 * first_neighbor_hopping
-   ! third_neighbor_hopping = 0.0d0 * first_neighbor_hopping
+   meV2eV = 1.0E-3
+   b = 0.5d0 ! In fractional coordinates
+   epsL = 33d0 * meV2eV
+   ! U0 = 6*pi*epsL
+   U0 = potential_height_U0
+   call kronig_penney_potential(b, U0, pos1_direct(1), V)
 
    o = onsite
    t1 = first_neighbor_hopping
    t2 = second_neighbor_hopping
    t3 = third_neighbor_hopping
 
-
    call isclose(dis,first_neighbor_dis,result1)
    call isclose(dis,second_neighbor_dis,result2)
    call isclose(dis,third_neighbor_dis,result3)
 
-
    if (abs(dis)<eps6) then
-      tij= o
+      tij= o + V
       return
    endif
 
