@@ -12,6 +12,27 @@ subroutine kronig_penney_potential(b, U0, x1, V)
 
 end subroutine kronig_penney_potential
 
+subroutine kronig_penney_potential_break_even_sym(b, U0, x1, V)
+   use para
+   implicit none
+   real(dp), intent(in) :: b, U0, x1
+   real(dp), intent(out) :: V
+
+   ! Calculate potential at x1
+   V = -U0/2.0
+   perturb = 0.1 * U0/2.0
+   if (0 <= x1 .and. x1 < b) then
+      V = U0/2.0
+   end if
+   if (0 <= x1 .and. x1 < b) then
+      V = U0/2.0
+   end if
+   if (0 <= x1 .and. x1 < b) then
+      V = U0/2.0
+   end if
+
+
+end subroutine kronig_penney_potential_break_even_sym
 
 subroutine generate_hr
    !> generate sparse tight-binding hamiltonian used in WannierTools
