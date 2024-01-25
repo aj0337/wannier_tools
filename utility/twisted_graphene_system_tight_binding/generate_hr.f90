@@ -6,7 +6,7 @@ subroutine kronig_penney_potential(b, U0, x1, V)
 
    ! Calculate potential at x1
    V = -U0/2.0
-   if (0 <= x1 .and. x1 < b) then
+   if (0 <= x1 .and. x1 <= b) then
       V = U0/2.0
    end if
 
@@ -17,18 +17,23 @@ subroutine kronig_penney_potential_break_even_sym(b, U0, x1, V)
    implicit none
    real(dp), intent(in) :: b, U0, x1
    real(dp), intent(out) :: V
+   real(dp) :: start1, start2, end1, end2, perturb
 
    ! Calculate potential at x1
    V = -U0/2.0
    perturb = 0.1 * U0/2.0
-   if (0 <= x1 .and. x1 < b) then
+   start1 = 0.25
+   end1 = 0.5
+   start2 = 0.5
+   end2 = 0.75
+   if (0 <= x1 .and. x1 <= b) then
       V = U0/2.0
    end if
-   if (0 <= x1 .and. x1 < b) then
-      V = U0/2.0
+   if (start1 <= x1 .and. x1 <= end1) then
+      V = V + perturb
    end if
-   if (0 <= x1 .and. x1 < b) then
-      V = U0/2.0
+   if (start2 <= x1 .and. x1 <= end2) then
+      V = V - perturb
    end if
 
 
