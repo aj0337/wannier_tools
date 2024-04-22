@@ -136,8 +136,9 @@ subroutine ek_bulk_line
       write(outfileindex, "('#column', i5, 200i16)")(i, i=1, 2+NumberofSelectedOrbitals_groups)
       do i=1, Num_wann
          do ik=1, knv3
-            write(outfileindex, '(200f16.9)')k3len(ik)*Angstrom2atomic,eigv_mpi(i, ik), &
-               weight_mpi(:, i, ik)
+            ! write(outfileindex, '(200f16.9)')k3len(ik)*Angstrom2atomic,eigv_mpi(i, ik), &
+            ! weight_mpi(:, i, ik)
+            write(outfileindex, '(4f16.9)')K3points(:, ik),eigv_mpi(i, ik)
          enddo
          write(outfileindex, *)' '
       enddo
@@ -1009,6 +1010,7 @@ subroutine sparse_ekbulk
       k3 = K3points(:, ik)
       call now(time1)
       call ham_bulk_coo_sparsehr(k3,acoo,icoo,jcoo)
+      ! call ham_bulk_coo_sparsehr_latticegauge(k3,acoo,icoo,jcoo)
       acoo= acoo/eV2Hartree
       nnz= splen
       call now(time2)
