@@ -3,8 +3,7 @@ subroutine kronig_penney_potential(b, U0, x1, V)
    implicit none
    real(dp), intent(in) :: b, U0, x1
    real(dp), intent(out) :: V
-
-   ! Calculate potential at x1
+   write(stdout,*) '>>>Applying Kronig-Penney potential'
    V = -U0/2.0
    if (0 <= x1 .and. x1 <= b) then
       V = U0/2.0
@@ -19,7 +18,7 @@ subroutine kronig_penney_potential_break_even_sym(b, U0, x1, V)
    real(dp), intent(out) :: V
    real(dp) :: start1, start2, end1, end2, perturb
 
-   ! Calculate potential at x1
+   write(stdout,*) '>>>Applying Kronig-Penney potential with broken even symmetry'
    V = -U0/2.0
    perturb = 0.1 * U0/2.0
    start1 = 0.25
@@ -38,6 +37,39 @@ subroutine kronig_penney_potential_break_even_sym(b, U0, x1, V)
 
 
 end subroutine kronig_penney_potential_break_even_sym
+
+subroutine kronig_penney_potential_break_odd_sym(b, U0, x1, V)
+   use para
+   implicit none
+   real(dp), intent(in) :: b, U0, x1
+   real(dp), intent(out) :: V
+   real(dp) :: start1, end1, perturb
+
+   write(stdout,*) '>>>Applying Kronig-Penney potential with broken odd symmetry'
+   V = -U0/2.0
+   perturb = 0.1 * U0/2.0
+   start1 = 0.125
+   end1 = 0.375
+   if (0 <= x1 .and. x1 <= b) then
+      V = U0/2.0
+   end if
+   if (start1 <= x1 .and. x1 <= end1) then
+      V = V + perturb
+   end if
+
+
+end subroutine kronig_penney_potential_break_odd_sym
+
+subroutine sine_potential(b, U0, x1, V)
+   use para
+   implicit none
+   real(dp), intent(in) :: b, U0, x1
+   real(dp), intent(out) :: V
+
+   write(stdout,*) '>>>Applying a sinusoidal potential'
+   V = U0 * sin(2.0_dp * pi * x1)
+
+end subroutine sine_potential
 
 subroutine generate_hr
    !> generate sparse tight-binding hamiltonian used in WannierTools
@@ -227,8 +259,7 @@ subroutine get_hopping(pos1, pos1_direct, pos2, tij)
    real(dp) :: o, t1, t2, t3
    real(dp) :: first_neighbor_dis, second_neighbor_dis, third_neighbor_dis,c_c_dis
    logical :: result1, result2, result3
-   real(dp) :: b, U0, V, epsL, meV2eV
-
+   real(dp) :: b, U0, V
 
    c_c_dis = 1.42d0 ! in Angstroms. remove hardcoding
    delta_pos= pos2- pos1
@@ -237,12 +268,22 @@ subroutine get_hopping(pos1, pos1_direct, pos2, tij)
    second_neighbor_dis = dsqrt(3.0d0) * c_c_dis
    third_neighbor_dis = 2 * c_c_dis
    tij= 0d0
-   meV2eV = 1.0E-3
    b = 0.5d0 ! In fractional coordinates
-   epsL = 33d0 * meV2eV
-   ! U0 = 6*pi*epsL
    U0 = potential_height_U0
-   call kronig_penney_potential(b, U0, pos1_direct(1), V)
+
+   select case(trim(potential_type(1)))
+    case("kronig")
+      call kronig_penney_potential(b, U0, pos1_direct(1), V)
+    case("kronig_break_even")
+      call kronig_penney_potential_break_even_sym(b, U0, pos1_direct(1), V)
+    case("kronig_break_odd")
+      call kronig_penney_potential_break_odd_sym(b, U0, pos1_direct(1), V)
+    case("sine")
+      call sine_potential(b, U0, pos1_direct(1), V)
+    case default
+      print *, "No external potential applied"
+      V = 0.0_dp
+   end select
 
    o = onsite
    t1 = first_neighbor_hopping
@@ -272,7 +313,6 @@ subroutine get_hopping(pos1, pos1_direct, pos2, tij)
       tij= t3
       return
    endif
-
 
    return
 

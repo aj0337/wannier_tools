@@ -58,6 +58,7 @@ subroutine readinput
    first_neighbor_hopping = 0.0d0
    second_neighbor_hopping = 0.0d0
    third_neighbor_hopping = 0.0d0
+   potential_type = 'none'
    potential_height_U0 = 0.0d0
    lattice_period_L = 0.0d0
 

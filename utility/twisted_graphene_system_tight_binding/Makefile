@@ -7,15 +7,15 @@ obj =  module.o readinput.o generate_crystal_structure.o \
 
 f90=ifort -fpp
 fcheck = -nogen-interface  -warn all  -check all
-flag = -O3 ${fcheck} #-nogen-interface #  -warn all 
+flag = -O3 ${fcheck} #-nogen-interface #  -warn all
 
 # blas and lapack libraries
 libs = -L/opt/intel/mkl/lib/ \
 		-lmkl_intel_lp64 -lmkl_sequential \
-		-lmkl_core        
- 
+		-lmkl_core
+
 main :  $(obj)
-	$(f90) $(obj) -o tgtbgen $(libs) 
+	$(f90) $(obj) -o tgtbgen $(libs)
 	cp tgtbgen  ../../bin
 
 .SUFFIXES: .o .f90
