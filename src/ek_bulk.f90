@@ -138,7 +138,7 @@ subroutine ek_bulk_line
          do ik=1, knv3
             ! write(outfileindex, '(200f16.9)')k3len(ik)*Angstrom2atomic,eigv_mpi(i, ik), &
             ! weight_mpi(:, i, ik)
-            write(outfileindex, '(4f16.9)')K3points(:, ik),eigv_mpi(i, ik)
+            write(outfileindex, '(5f16.9)')K3points(:, ik),k3len(ik)*Angstrom2atomic,eigv_mpi(i, ik)
          enddo
          write(outfileindex, *)' '
       enddo
@@ -1079,7 +1079,7 @@ subroutine sparse_ekbulk
                   (dos_selected_mpi(i, ik, ig, :), ig=1, NumberofSelectedOrbitals_groups)
             else
                ! write(outfileindex, '(2f16.9)')k3len(ik)*Angstrom2atomic,eigv_mpi(i, ik)
-               write(outfileindex, '(4f16.9)')K3points(:, ik),eigv_mpi(i, ik)
+               write(outfileindex, '(5f16.9)')K3points(:, ik),k3len(ik)*Angstrom2atomic,eigv_mpi(i, ik)
             endif
          enddo
          write(outfileindex, *)' '

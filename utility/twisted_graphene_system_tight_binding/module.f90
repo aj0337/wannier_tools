@@ -60,6 +60,8 @@ module para
    !> generate hmnr or not
    logical :: hr_generate
 
+   logical :: twisted_system
+
    !> generate sparse hamiltonian or not
    logical :: gen_sparse_hr
 
@@ -75,12 +77,12 @@ module para
 
    real(dp) :: onsite, first_neighbor_hopping, second_neighbor_hopping, third_neighbor_hopping
    real(dp) :: potential_height_U0, lattice_period_L
-   character(len=200) :: potential_type(200)
+   character(len=200) :: potential_type(200), system_type(200)
 
    !>  iR_cut
    integer :: iR_cut
 
-   namelist / PARAMETERS / number_layers, twisted_index_m, &
+   namelist / PARAMETERS / twisted_system, system_type, number_layers, twisted_index_m, &
       twisted_angle_array_input, stacking_sequences_input , &
       use_poscar, hr_generate, gen_sparse_hr, hr_cutoff, vpppi, &
       iR_cut, lattice_constant_a, lattice_constant_c, onsite, first_neighbor_hopping, second_neighbor_hopping, third_neighbor_hopping,potential_type, potential_height_U0, lattice_period_L

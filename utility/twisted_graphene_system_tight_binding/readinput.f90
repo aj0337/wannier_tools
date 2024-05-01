@@ -45,6 +45,8 @@ subroutine readinput
    endif
 
    !> initialization
+   twisted_system= .TRUE.
+   system_type= 'none'
    number_layers= 2
    twisted_index_m= 10
    vpppi=-2.81d0

@@ -158,7 +158,20 @@ subroutine generate_hr
             pos_direct= atom_positions_direct(:, ja)
             call direct_cart_real(lattice(:, 1), lattice(:, 2), lattice(:, 3), pos_direct, pos_cart)
             pos2= pos_cart+ R
-            call get_hopping(pos1, pos1_direct, pos2, tij)
+
+            if (twisted_system) then
+               call get_hopping(pos1, pos1_direct, pos2, tij)
+            else
+               select case(trim(system_type(1)))
+                case ("Graphene")
+                  call get_hopping_graphene(pos1, pos1_direct, pos2, tij)
+                case("BLG")
+                  call get_hopping(pos1, pos1_direct, pos2, tij)
+                case default
+                  print *, "Invalid input for system_type in system.in file. Tight binding Hamiltonian generator not implemented"
+               end select
+            endif
+
             !> when tij less than hr_cutoff, we don't keep it.
             if (abs(tij)<hr_cutoff) cycle
             iter= iter+ 1
@@ -242,12 +255,7 @@ subroutine isclose(number1,number2,result)
    return
 end subroutine
 
-subroutine get_hopping(pos1, pos1_direct, pos2, tij)
-   !> this subroutine will generate the hopping between two carbon atoms with given their positions.
-   !> here we asuume z direction is the stacking direction
-   !> parameters are adopted from  Nano Lett. 2020, 20, 2410−2415
-   !> https://pubs.acs.org/doi/10.1021/acs.nanolett.9b05117
-   !> pos1, pos2 should be in the cartesian coordinates.
+subroutine get_hopping_graphene(pos1, pos1_direct, pos2, tij)
    use para
    implicit none
 
@@ -260,6 +268,7 @@ subroutine get_hopping(pos1, pos1_direct, pos2, tij)
    real(dp) :: first_neighbor_dis, second_neighbor_dis, third_neighbor_dis,c_c_dis
    logical :: result1, result2, result3
    real(dp) :: b, U0, V
+   print *, "graphene system"
 
    c_c_dis = 1.42d0 ! in Angstroms. remove hardcoding
    delta_pos= pos2- pos1
@@ -316,6 +325,78 @@ subroutine get_hopping(pos1, pos1_direct, pos2, tij)
 
    return
 
+end subroutine get_hopping_graphene
+
+
+subroutine get_hopping(pos1, pos1_direct, pos2, tij)
+   !> this subroutine will generate the hopping between two carbon atoms with given their positions.
+   !> here we asuume z direction is the stacking direction
+   !> parameters are adopted from  Nano Lett. 2020, 20, 2410−2415
+   !> https://pubs.acs.org/doi/10.1021/acs.nanolett.9b05117
+   !> pos1, pos2 should be in the cartesian coordinates.
+   use para
+   implicit none
+
+   real(dp), intent(in) :: pos1(3), pos1_direct(3)
+   real(dp), intent(in) :: pos2(3)
+   complex(dp), intent(out) :: tij
+
+   real(dp) :: dis, sin_theta2, cos_theta2, delta_pos(3)
+   real(dp) :: vsig0, vpi0, qsig, asig, qpi, api, rc, lc, fc, vpi, vsig, onsite_twisted
+   real(dp) :: b, U0, V
+
+   print *, "twisted system"
+   delta_pos= pos2- pos1
+   dis= dsqrt(sum(delta_pos**2))
+   tij= 0d0
+   if (dis>Rcut) return
+
+   vsig0=0.48d0
+   qsig=7.428d0
+   asig=3.349d0
+   vpi0=vpppi
+   qpi=3.1451d0
+   api=1.418d0
+   rc=6.14d0
+   lc=0.265d0
+   onsite_twisted=-0.812d0
+   b = 0.5d0 ! In fractional coordinates
+   U0 = potential_height_U0
+
+   select case(trim(potential_type(1)))
+    case("kronig")
+      call kronig_penney_potential(b, U0, pos1_direct(1), V)
+    case("kronig_break_even")
+      call kronig_penney_potential_break_even_sym(b, U0, pos1_direct(1), V)
+    case("kronig_break_odd")
+      call kronig_penney_potential_break_odd_sym(b, U0, pos1_direct(1), V)
+    case("sine")
+      call sine_potential(b, U0, pos1_direct(1), V)
+    case default
+      write(stdout,*) '>>>No external potential applied'
+      V = 0.0_dp
+   end select
+
+   if (abs(dis)<eps6) then
+      tij= onsite_twisted + V
+      return
+   endif
+
+   cos_theta2= (delta_pos(3)/dis)**2
+
+   fc= 1d0/(1d0+dexp((dis-rc)/lc))
+   sin_theta2=  1d0 - cos_theta2
+   vpi= vpi0*dexp( qpi * ( 1d0- dis/api  ))*fc
+   vsig= vsig0*dexp(qsig* (1d0- dis/asig ))*fc
+   tij= vpi* sin_theta2+  vsig * cos_theta2
+
+   !> add a hopping \gamma_2  between A1-B3 from the first layer to the third layer,
+   !> B1 is connected with A2
+   !> this hopping will open an energy gap at K of trilayer graphene
+   if (abs(abs(delta_pos(1)))<0.3d0 .and. abs(abs(delta_pos(2)))<0.3d0 .and. &
+      abs(abs(delta_pos(3))-6.72d0)<0.3d0 ) tij=-0.007d0
+
+   return
 end subroutine get_hopping
 
 
