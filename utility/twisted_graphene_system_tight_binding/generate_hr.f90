@@ -166,7 +166,7 @@ subroutine generate_hr
                 case ("Graphene")
                   call get_hopping_graphene(pos1, pos1_direct, pos2, tij)
                 case("BLG")
-                  call get_hopping(pos1, pos1_direct, pos2, tij)
+                  call get_hopping_BLG(pos1, pos1_direct, pos2, tij)
                 case default
                   print *, "Invalid input for system_type in system.in file. Tight binding Hamiltonian generator not implemented"
                end select
@@ -290,7 +290,7 @@ subroutine get_hopping_graphene(pos1, pos1_direct, pos2, tij)
     case("sine")
       call sine_potential(b, U0, pos1_direct(1), V)
     case default
-      print *, "No external potential applied"
+      write(stdout,*) '>>>No external potential applied'
       V = 0.0_dp
    end select
 
@@ -327,6 +327,94 @@ subroutine get_hopping_graphene(pos1, pos1_direct, pos2, tij)
 
 end subroutine get_hopping_graphene
 
+subroutine get_hopping_BLG(pos1, pos1_direct, pos2, tij)
+   use para
+   implicit none
+
+   real(dp), intent(in) :: pos1(3), pos1_direct(3)
+   real(dp), intent(in) :: pos2(3)
+   complex(dp), intent(out) :: tij
+
+   real(dp) :: dis, delta_pos(3)
+   real(dp) :: o, t1, t2, t3
+   real(dp) :: z1, z2, layer_dist
+   real(dp) :: first_neighbor_dis, second_neighbor_dis, third_neighbor_dis, c_c_dis
+   logical :: result1, result2, result3, intralayer, interlayer
+   real(dp) :: b, U0, V
+   real(dp) :: interlayer_c_c_dis, t_interlayer_nearest_neighbor
+
+   z2 = pos2(3)
+   z1 = pos1(3)
+   layer_dist = abs(z2 - z1)
+
+   c_c_dis = 1.42d0 ! Carbon-carbon distance in Angstroms within the same layer
+   interlayer_c_c_dis = 3.35d0 ! Interlayer carbon-carbon distance in Angstroms
+   delta_pos = pos2 - pos1
+   dis = dsqrt(sum(delta_pos**2))
+   first_neighbor_dis = c_c_dis
+   second_neighbor_dis = dsqrt(3.0d0) * c_c_dis
+   third_neighbor_dis = 2 * c_c_dis
+   tij = 0d0
+   t_interlayer_nearest_neighbor = 0.33d0 ! Interlayer hopping parameter
+   b = 0.5d0 ! In fractional coordinates
+   U0 = potential_height_U0
+
+   select case(trim(potential_type(1)))
+    case("kronig")
+      call kronig_penney_potential(b, U0, pos1_direct(1), V)
+    case("kronig_break_even")
+      call kronig_penney_potential_break_even_sym(b, U0, pos1_direct(1), V)
+    case("kronig_break_odd")
+      call kronig_penney_potential_break_odd_sym(b, U0, pos1_direct(1), V)
+    case("sine")
+      call sine_potential(b, U0, pos1_direct(1), V)
+    case default
+      write(stdout,*) '>>>No external potential applied'
+      V = 0.0_dp
+   end select
+
+   o = onsite
+   t1 = first_neighbor_hopping
+   t2 = second_neighbor_hopping
+   t3 = third_neighbor_hopping
+
+   call isclose(dis, first_neighbor_dis, result1)
+   call isclose(dis, second_neighbor_dis, result2)
+   call isclose(dis, third_neighbor_dis, result3)
+   call isclose(dis, interlayer_c_c_dis, interlayer)
+   call isclose(layer_dist, 0d0, intralayer)
+
+   if (intralayer) then
+      if (abs(dis) < eps6) then
+         tij = o + V
+         return
+      endif
+
+      if (result1) then
+         tij = t1
+         return
+      endif
+
+      if (result2) then
+         tij = t2
+         return
+      endif
+
+      if (result3) then
+         tij = t3
+         return
+      endif
+   else
+      if (interlayer) then
+         tij = t_interlayer_nearest_neighbor
+         return
+      endif
+   endif
+
+   return
+end subroutine
+
+
 
 subroutine get_hopping(pos1, pos1_direct, pos2, tij)
    !> this subroutine will generate the hopping between two carbon atoms with given their positions.
@@ -345,7 +433,6 @@ subroutine get_hopping(pos1, pos1_direct, pos2, tij)
    real(dp) :: vsig0, vpi0, qsig, asig, qpi, api, rc, lc, fc, vpi, vsig, onsite_twisted
    real(dp) :: b, U0, V
 
-   print *, "twisted system"
    delta_pos= pos2- pos1
    dis= dsqrt(sum(delta_pos**2))
    tij= 0d0
