@@ -227,7 +227,6 @@ subroutine ham_bulk_latticegauge(k, Hamk_bulk)
 
    open(unit=10, file='Hk.dat', status='unknown', action='write', position='append')
    write(10, '(A, 3F12.8)') 'k vector:', k(1), k(2), k(3)
-   print *, 'ham_bulk_latticegauge'
 
    Hamk_bulk = 0d0
    do iR = 1, Nrpts
@@ -390,7 +389,6 @@ subroutine ham_bulk_coo_densehr(k,nnzmax, nnz, acoo,icoo,jcoo)
 
    allocate( Hamk_bulk(Num_wann, Num_wann))
    Hamk_bulk= 0d0
-   print *, 'ham_bulk_coo_densehr'
 
    do iR=1, Nrpts
       ia=irvec(1,iR)

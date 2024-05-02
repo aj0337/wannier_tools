@@ -133,7 +133,6 @@ subroutine ek_bulk_line
       write(outfileindex, &
          "('#', a12, a14, 1X, '| projection', 100(3X,'|group', i2, ': A '))")&
          'klen', 'E', (i, i=1, NumberofSelectedOrbitals_groups)
-      write(outfileindex, "('#column', i5, 200i16)")(i, i=1, 2+NumberofSelectedOrbitals_groups)
       do i=1, Num_wann
          do ik=1, knv3
             ! write(outfileindex, '(200f16.9)')k3len(ik)*Angstrom2atomic,eigv_mpi(i, ik), &
@@ -1009,8 +1008,8 @@ subroutine sparse_ekbulk
       if (cpuid==0) write(stdout, '(a, 2i10)') 'BulkBand_calc in sparse mode:', ik,nk3_band
       k3 = K3points(:, ik)
       call now(time1)
-      ! call ham_bulk_coo_sparsehr(k3,acoo,icoo,jcoo)
-      call ham_bulk_coo_sparsehr_latticegauge(k3,acoo,icoo,jcoo)
+      call ham_bulk_coo_sparsehr(k3,acoo,icoo,jcoo)
+      ! call ham_bulk_coo_sparsehr_latticegauge(k3,acoo,icoo,jcoo)
       acoo= acoo/eV2Hartree
       nnz= splen
       call now(time2)
@@ -1067,7 +1066,6 @@ subroutine sparse_ekbulk
          write(outfileindex, &
             "('#', a12, a14, 1X, '| projection', 100(3X,'|group', i2, ': A '))")&
             'klen', 'E', (i, i=1, NumberofSelectedOrbitals_groups)
-         write(outfileindex, "('#column', i5, 200i16)")(i, i=1, 2+NumberofSelectedOrbitals_groups)
       else
          write(outfileindex, '(2a19)') '# klen', 'E(eV)'
       endif
