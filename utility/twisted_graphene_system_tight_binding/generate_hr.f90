@@ -3,7 +3,6 @@ subroutine kronig_penney_potential(b, U0, x1, V)
    implicit none
    real(dp), intent(in) :: b, U0, x1
    real(dp), intent(out) :: V
-   write(stdout,*) '>>>Applying Kronig-Penney potential'
    V = -U0/2.0
    if (0 <= x1 .and. x1 <= b) then
       V = U0/2.0
@@ -18,7 +17,6 @@ subroutine kronig_penney_potential_break_even_sym(b, U0, x1, V)
    real(dp), intent(out) :: V
    real(dp) :: start1, start2, end1, end2, perturb
 
-   write(stdout,*) '>>>Applying Kronig-Penney potential with broken even symmetry'
    V = -U0/2.0
    perturb = 0.1 * U0/2.0
    start1 = 0.25
@@ -45,7 +43,6 @@ subroutine kronig_penney_potential_break_odd_sym(b, U0, x1, V)
    real(dp), intent(out) :: V
    real(dp) :: start1, end1, perturb
 
-   write(stdout,*) '>>>Applying Kronig-Penney potential with broken odd symmetry'
    V = -U0/2.0
    perturb = 0.1 * U0/2.0
    start1 = 0.125
@@ -66,10 +63,29 @@ subroutine sine_potential(b, U0, x1, V)
    real(dp), intent(in) :: b, U0, x1
    real(dp), intent(out) :: V
 
-   write(stdout,*) '>>>Applying a sinusoidal potential'
    V = U0 * sin(2.0_dp * pi * x1)
 
 end subroutine sine_potential
+
+subroutine triangular_potential(U0, x1, y1, V)
+   use para
+   implicit none
+   real(dp), intent(in) :: U0, x1, y1
+   real(dp), intent(out) :: V
+   real(dp) :: kx1, ky1
+
+   kx1 = 2 * pi / 0.15              ! 0.15 is hardcoded can be decreased (increased) to increase (decrease) the number of wells
+   ky1 = 2 * pi / (0.15 * sqrt(3.0d0))
+
+   V = (U0/2) * (cos(kx1 * x1) + &
+      cos(kx1 / 2 * x1 + ky1 * y1) + &
+      cos(kx1 / 2 * x1 - ky1 * y1))
+
+   open(unit=10, file='triangular.txt', action='write', status='unknown', position='append')
+   write(10,*) x1, y1, V
+   close(10)
+
+end subroutine triangular_potential
 
 subroutine generate_hr
    !> generate sparse tight-binding hamiltonian used in WannierTools
@@ -154,11 +170,12 @@ subroutine generate_hr
          pos1_direct(:)= pos_direct(:)
          call direct_cart_real(lattice(:, 1), lattice(:, 2), lattice(:, 3), pos_direct, pos_cart)
          pos1= pos_cart
+         pos_at1(ia,:)= pos1(:)
          do ja=1, num_atoms
             pos_direct= atom_positions_direct(:, ja)
             call direct_cart_real(lattice(:, 1), lattice(:, 2), lattice(:, 3), pos_direct, pos_cart)
             pos2= pos_cart+ R
-
+            pos_at2(ja,:)= pos2(:)
             if (twisted_system) then
                call get_hopping(pos1, pos1_direct, pos2, tij)
             else
@@ -179,9 +196,6 @@ subroutine generate_hr
             H_jcoo(iter)= ja
             H_ir  (iter)= ir
             H_acoo(iter)= tij
-            pos_at1(iter,:)= pos1(:)
-            pos_direct_at1(iter,:)= pos1_direct(:)
-            pos_at2(iter,:)= pos2(:)
          enddo ! ja
       enddo ! ia
       call now(time_toc)
@@ -211,6 +225,7 @@ subroutine generate_hr
 
    else
       open (unit=1012, file='TG_hr.dat')
+      open(unit=1013, file='TG_hr_with_atom_coord.dat')
       write(1012, '(a,f10.4)')'! Tight binding model for twisted graphene system, theta=', twisted_angle_degree
       write(1012, '(I10, a)') num_atoms, '  ! Num_wann: number of wannier orbitals'
       write(1012, '(I10, a)') Nrpts, '  ! NRPTS: number of R points'
@@ -225,11 +240,14 @@ subroutine generate_hr
                   endif
                enddo !i
                if (abs(h_value)<hr_cutoff)h_value=0d0
-               write(1012, '(5I5, 2f12.6)')irvec(:, iR), n, m, h_value
+               write(1012, '(5I5, 2E25.10)')irvec(:, iR), n, m, h_value
+               ! write(1013, '(8f13.6)') pos_at1(iR,:),pos_at2(iR,:),h_value
+               write(1013, '(8f13.6)') pos_at1(n,:),pos_at2(m,:),h_value
             enddo !m
          enddo !n
       enddo !iR
       close(1012)
+      close(1013)
    endif
 
    call generate_wt_input(Num_atoms, lattice, atom_positions_direct)
@@ -268,7 +286,6 @@ subroutine get_hopping_graphene(pos1, pos1_direct, pos2, tij)
    real(dp) :: first_neighbor_dis, second_neighbor_dis, third_neighbor_dis,c_c_dis
    logical :: result1, result2, result3
    real(dp) :: b, U0, V
-   print *, "graphene system"
 
    c_c_dis = 1.42d0 ! in Angstroms. remove hardcoding
    delta_pos= pos2- pos1
@@ -289,8 +306,9 @@ subroutine get_hopping_graphene(pos1, pos1_direct, pos2, tij)
       call kronig_penney_potential_break_odd_sym(b, U0, pos1_direct(1), V)
     case("sine")
       call sine_potential(b, U0, pos1_direct(1), V)
+    case("triangular")
+      call triangular_potential(U0, pos1_direct(1), pos1_direct(2),V)
     case default
-      write(stdout,*) '>>>No external potential applied'
       V = 0.0_dp
    end select
 
@@ -368,8 +386,9 @@ subroutine get_hopping_BLG(pos1, pos1_direct, pos2, tij)
       call kronig_penney_potential_break_odd_sym(b, U0, pos1_direct(1), V)
     case("sine")
       call sine_potential(b, U0, pos1_direct(1), V)
+    case("triangular")
+      call triangular_potential(U0, pos1_direct(1), pos1_direct(2),V)
     case default
-      write(stdout,*) '>>>No external potential applied'
       V = 0.0_dp
    end select
 
@@ -413,7 +432,6 @@ subroutine get_hopping_BLG(pos1, pos1_direct, pos2, tij)
 
    return
 end subroutine
-
 
 
 subroutine get_hopping(pos1, pos1_direct, pos2, tij)
@@ -460,7 +478,6 @@ subroutine get_hopping(pos1, pos1_direct, pos2, tij)
     case("sine")
       call sine_potential(b, U0, pos1_direct(1), V)
     case default
-      write(stdout,*) '>>>No external potential applied'
       V = 0.0_dp
    end select
 
