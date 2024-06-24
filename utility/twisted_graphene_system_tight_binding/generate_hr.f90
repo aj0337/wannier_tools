@@ -104,7 +104,7 @@ subroutine generate_hr
    integer, allocatable :: H_icoo(:), H_jcoo(:), H_ir(:)
 
    real(dp) :: pos1(3), pos1_direct(3), pos2(3), pos_cart(3), pos_direct(3), R(3), delta_pos(3), dis
-   real(dp), allocatable :: pos_at1(:,:), pos_direct_at1(:,:), pos_at2(:,:)
+   real(dp), allocatable :: pos1_cartesian(:,:), pos_direct_at1(:,:)
    complex(dp) :: tij, h_value
    complex(dp), allocatable :: H_acoo(:)
 
@@ -145,9 +145,8 @@ subroutine generate_hr
    allocate(H_icoo(nnzmax))
    allocate(H_jcoo(nnzmax))
    allocate(H_ir  (nnzmax))
-   allocate(pos_at1(nnzmax,3))
+   allocate(pos1_cartesian(nnzmax,3))
    allocate(pos_direct_at1(nnzmax,3))
-   allocate(pos_at2(nnzmax,3))
    H_icoo= 0
    H_jcoo= 0
    H_ir  = 0
@@ -165,12 +164,11 @@ subroutine generate_hr
          pos1_direct(:)= pos_direct(:)
          call direct_cart_real(lattice(:, 1), lattice(:, 2), lattice(:, 3), pos_direct, pos_cart)
          pos1= pos_cart
-         pos_at1(ia,:)= pos1(:)
+         pos1_cartesian(ia,:)= pos1(:)
          do ja=1, num_atoms
             pos_direct= atom_positions_direct(:, ja)
             call direct_cart_real(lattice(:, 1), lattice(:, 2), lattice(:, 3), pos_direct, pos_cart)
             pos2= pos_cart+ R
-            pos_at2(ja,:)= pos2(:)
             if (twisted_system) then
                call get_hopping(pos1, pos1_direct, pos2, tij)
             else
@@ -213,7 +211,7 @@ subroutine generate_hr
       write(1012, '(15I5)') (1, i=1, nrpts)
       do i=1, nnz
          write(1012, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), H_acoo(i)
-         write(1013, '(3i5, 2i8, 11f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), pos_at1(i,:),pos_at2(i,:),pos_direct_at1(i,:),H_acoo(i)
+         write(1013, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), pos1_cartesian(i,:),pos_direct_at1(i,:),H_acoo(i)
       enddo
       close(1012)
       close(1013)
@@ -236,8 +234,7 @@ subroutine generate_hr
                enddo !i
                if (abs(h_value)<hr_cutoff)h_value=0d0
                write(1012, '(5I5, 2E25.10)')irvec(:, iR), n, m, h_value
-               ! write(1013, '(8f13.6)') pos_at1(iR,:),pos_at2(iR,:),h_value
-               write(1013, '(8f13.6)') pos_at1(n,:),pos_at2(m,:),h_value
+               write(1013, '(5I5, 8f13.6)')irvec(:, iR), n, m, pos1_cartesian(n,:),h_value
             enddo !m
          enddo !n
       enddo !iR
