@@ -80,11 +80,6 @@ subroutine triangular_potential(U0, x1, y1, V)
    V = (U0/2) * (cos(kx1 * x1) + &
       cos(kx1 / 2 * x1 + ky1 * y1) + &
       cos(kx1 / 2 * x1 - ky1 * y1))
-
-   open(unit=10, file='triangular.txt', action='write', status='unknown', position='append')
-   write(10,*) x1, y1, V
-   close(10)
-
 end subroutine triangular_potential
 
 subroutine generate_hr
