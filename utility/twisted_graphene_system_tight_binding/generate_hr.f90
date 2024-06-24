@@ -162,6 +162,7 @@ subroutine generate_hr
       do ia=1, num_atoms
          pos_direct= atom_positions_direct(:, ia)
          pos1_direct(:)= pos_direct(:)
+         pos_direct_at1(ia,:)= pos_direct(:)
          call direct_cart_real(lattice(:, 1), lattice(:, 2), lattice(:, 3), pos_direct, pos_cart)
          pos1= pos_cart
          pos1_cartesian(ia,:)= pos1(:)
@@ -234,7 +235,7 @@ subroutine generate_hr
                enddo !i
                if (abs(h_value)<hr_cutoff)h_value=0d0
                write(1012, '(5I5, 2E25.10)')irvec(:, iR), n, m, h_value
-               write(1013, '(5I5, 8f13.6)')irvec(:, iR), n, m, pos1_cartesian(n,:),h_value
+               write(1013, '(5I5, 8f13.6)')irvec(:, iR), n, m, pos1_cartesian(n,:),pos_direct_at1(n,:),h_value
             enddo !m
          enddo !n
       enddo !iR
