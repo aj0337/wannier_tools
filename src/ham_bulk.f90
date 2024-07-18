@@ -225,9 +225,6 @@ subroutine ham_bulk_latticegauge(k, Hamk_bulk)
    ! Hamiltonian of bulk system
    complex(dp), intent(out) :: Hamk_bulk(Num_wann, Num_wann)
 
-   open(unit=10, file='Hk.dat', status='unknown', action='write', position='append')
-   write(10, '(A, 3F12.8)') 'k vector:', k(1), k(2), k(3)
-
    Hamk_bulk = 0d0
    do iR = 1, Nrpts
       kdotr = k(1)*irvec(1, iR) + k(2)*irvec(2, iR) + k(3)*irvec(3, iR)
@@ -245,11 +242,8 @@ subroutine ham_bulk_latticegauge(k, Hamk_bulk)
             write(stdout, *) 'value at (i2, i1)', Hamk_bulk(i2, i1)
             !stop
          endif
-         write(10, *) i1, i2, real(Hamk_bulk(i1, i2)), aimag(Hamk_bulk(i1, i2))
       end do
    end do
-
-   close(unit=10)
 
    return
 end subroutine ham_bulk_latticegauge
@@ -452,9 +446,6 @@ subroutine ham_bulk_coo_sparsehr_latticegauge(k,acoo,icoo,jcoo)
    integer :: i,j,ir
    print *, 'ham_bulk_coo_sparsehr_latticegauge'
 
-   open(unit=11, file='Hk.dat', status='unknown', action='write', position='append')
-   write(11, '(A, 3F12.8)') 'k vector:', k(1), k(2), k(3)
-
    do i=1,splen
       ir=hirv(i)
       icoo(i)=hicoo(i)
@@ -463,9 +454,7 @@ subroutine ham_bulk_coo_sparsehr_latticegauge(k,acoo,icoo,jcoo)
       kdotr=posij(1)*k(1)+posij(2)*k(2)+posij(3)*k(3)
       ratio= (cos(twopi*kdotr)+zi*sin(twopi*kdotr))
       acoo(i)=ratio*hacoo(i)
-      write(11, *) icoo(i), jcoo(i), real(acoo(i)), aimag(acoo(i))
    end do
-   close(unit=11)
 
    return
 end subroutine ham_bulk_coo_sparsehr_latticegauge
@@ -486,9 +475,6 @@ subroutine ham_bulk_coo_sparsehr(k,acoo,icoo,jcoo)
    integer :: i,j,ir
    print *, 'ham_bulk_coo_sparsehr'
 
-   open(unit=11, file='Hk.dat', status='unknown', action='write', position='append')
-   write(11, '(A, 3F12.8)') 'k vector:', k(1), k(2), k(3)
-
    do i=1,splen
       ir=hirv(i)
       icoo(i)=hicoo(i)
@@ -497,9 +483,7 @@ subroutine ham_bulk_coo_sparsehr(k,acoo,icoo,jcoo)
       kdotr=posij(1)*k(1)+posij(2)*k(2)+posij(3)*k(3)
       ratio= (cos(twopi*kdotr)+zi*sin(twopi*kdotr))
       acoo(i)=ratio*hacoo(i)
-      write(11, *) icoo(i), jcoo(i), real(acoo(i)), aimag(acoo(i))
    end do
-   close(unit=11)
 
    return
 end subroutine ham_bulk_coo_sparsehr

@@ -72,10 +72,11 @@ subroutine triangular_potential(U0, x1, y1, V)
    implicit none
    real(dp), intent(in) :: U0, x1, y1
    real(dp), intent(out) :: V
-   real(dp) :: kx1, ky1
+   real(dp) :: kx1, ky1, width
 
-   kx1 = 2 * pi / 0.15              ! 0.15 is hardcoded can be decreased (increased) to increase (decrease) the number of wells
-   ky1 = 2 * pi / (0.15 * sqrt(3.0d0))
+   width = 0.15d0
+   kx1 = 2 * pi / width              ! width is hardcoded can be decreased (increased) to increase (decrease) the number of wells
+   ky1 = 2 * pi / (width * sqrt(3.0d0))
 
    V = (U0/2) * (cos(kx1 * x1) + &
       cos(kx1 / 2 * x1 + ky1 * y1) + &
@@ -204,7 +205,6 @@ subroutine generate_hr
 
    if (gen_sparse_hr) then
       open(unit=1012, file='TG_hr.dat')
-      open(unit=1013, file='TG_hr_with_atom_coord.dat')
       write(1012, '(a,f10.4)')'! Tight binding model for twisted graphene system, theta=', twisted_angle_degree
       write(1012, '(i20, a)') nnz  , '  ! Number of non-zeros lines of HmnR'
       write(1012, '(i20, a)') num_atoms  , '  ! Number of Wannier functions'
@@ -212,10 +212,8 @@ subroutine generate_hr
       write(1012, '(15I5)') (1, i=1, nrpts)
       do i=1, nnz
          write(1012, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), H_acoo(i)
-         write(1013, '(3i5, 2i8, 8f13.6)') irvec(:, H_ir(i)), H_icoo(i), H_jcoo(i), pos1_cartesian(i,:),pos_direct_at1(i,:),H_acoo(i)
       enddo
       close(1012)
-      close(1013)
 
    else
       open (unit=1012, file='TG_hr.dat')
@@ -235,7 +233,6 @@ subroutine generate_hr
                enddo !i
                if (abs(h_value)<hr_cutoff)h_value=0d0
                write(1012, '(5I5, 2E25.10)')irvec(:, iR), n, m, h_value
-               write(1013, '(5I5, 8f13.6)')irvec(:, iR), n, m, pos1_cartesian(n,:),pos_direct_at1(n,:),h_value
             enddo !m
          enddo !n
       enddo !iR
